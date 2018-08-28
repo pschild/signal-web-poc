@@ -1,8 +1,12 @@
 var StaticArrayBufferProto = new ArrayBuffer().__proto__;
 
+/**
+ * Contains global util methods for Signal.
+ */
 window.signalUtil = {
     randomId: function() {
-        return Math.floor((Math.random() * 4000) + 1);
+        // returns a random number between 1 and 9999
+        return Math.floor((Math.random() * 9999) + 1);
     },
     toString: function (thing) {
         if (typeof thing == 'string') {

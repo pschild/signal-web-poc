@@ -1,3 +1,6 @@
+/**
+ * Class that wraps signal specific methods.
+ */
 class SignalWrapper {
 
     constructor() {

@@ -1,4 +1,11 @@
-function SignalProtocolStore(name) {
+/**
+ * Store for persisting identities, keys and session information for a Signal user.
+ * The data will be stored in-memory, so it's only valid as long as the app will be running.
+ *
+ * Taken from https://raw.githubusercontent.com/signalapp/libsignal-protocol-javascript/master/test/InMemorySignalProtocolStore.js
+ */
+
+function SignalProtocolStore() {
     this.store = {};
 }
 

@@ -1,17 +1,21 @@
 (() => {
-    localStorage.clear();
-
+    // object holding signal specific methods
     const signalWrapper = new SignalWrapper();
 
+    // create a store for each user
     const storeAlice = new SignalProtocolStore('alice');
     const storeBob = new SignalProtocolStore('bob');
 
     let preKeyBundleAlice = null;
     let preKeyBundleBob = null;
 
-    const addressAlice = new libsignal.SignalProtocolAddress('alice', 0);
-    const addressBob = new libsignal.SignalProtocolAddress('bob', 0);
+    // addresses for each user
+    const addressAlice = new libsignal.SignalProtocolAddress('alice', 0); // deviceId is always 0 for the PoC
+    const addressBob = new libsignal.SignalProtocolAddress('bob', 0); // deviceId is always 0 for the PoC
 
+    // registering a new user consists of two steps:
+    // 1. generate a new identity (identity key pair and registrationId)
+    // 2. generate a bunch of prekeys
     let registerUser = (store) => {
         return signalWrapper.generateIdentity(store)
             .then(() => {
@@ -19,9 +23,12 @@
             });
     };
 
+    // before a message can be encrypted, a session with the recipient needs to be established
     let encrypt = (plainMessage, senderStore, receiverAddress) => {
+        // 1. establish a session
         let sessionCipher = new libsignal.SessionCipher(senderStore, receiverAddress);
         let messageAsArrayBuffer = signalUtil.toArrayBuffer(plainMessage);
+        // 2. encrypt the plain message
         return sessionCipher.encrypt(messageAsArrayBuffer)
             .then((encryptedMessageObject) => {
                 encryptedMessageObject.body = signalUtil.toArrayBuffer(encryptedMessageObject.body);
@@ -30,16 +37,23 @@
             });
     };
 
+    // before a message can be decrypted, a session with the sender needs to be established
     let decrypt = (encryptedMessageObject, receiverStore, senderAddress) => {
         let ciphertext = signalUtil.base64ToArrayBuffer(encryptedMessageObject.body);
         let messageType = encryptedMessageObject.type;
 
+        // 1. establish a session
         const sessionCipher = new libsignal.SessionCipher(receiverStore, senderAddress);
 
         let decryptionPromise;
-        if (messageType === 3) { // 3 = PREKEY_BUNDLE
+        // a message can be a PreKeyWhisperMessage (3 = PREKEY_BUNDLE) or a normal WhisperMessage, depending on the session state
+        if (messageType === 3) {
+            // Decrypt a PreKeyWhisperMessage by first establishing a new session
+            // The session will be set up automatically by libsignal.
+            // The information to do that is delivered within the message's ciphertext.
             decryptionPromise = sessionCipher.decryptPreKeyWhisperMessage(ciphertext, 'binary');
         } else {
+            // Decrypt a normal message using an existing session
             decryptionPromise = sessionCipher.decryptWhisperMessage(ciphertext, 'binary');
         }
 
@@ -49,6 +63,7 @@
             });
     };
 
+    // walk through the single steps:
     Promise.resolve()
         .then(() => {
             console.log('1) Registering alice...');
